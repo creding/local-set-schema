@@ -8,8 +8,16 @@
     "build": "tsup",
     "dev": "tsup --watch"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "schema.org",
+    "json-ld",
+    "seo",
+    "next.js",
+    "react",
+    "local-seo",
+    "graph"
+  ],
+  "author": "ccreding",
   "license": "ISC",
   "devDependencies": {
     "@types/react": "^19.2.14",
@@ -30,5 +38,8 @@
   "files": [
     "dist"
   ],
-  "repository": "github:creding/local-set-schema"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/creding/local-set-schema.git"
+  }
 }
