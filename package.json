@@ -1,0 +1,33 @@
+{
+  "name": "json-ld",
+  "version": "1.0.0",
+  "description": "A reusable, type-safe JSON-LD toolkit for Next.js/React projects. **Site-agnostic** — all site data is passed through typed option interfaces, making it portable across any project.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "react": ">=16",
+    "react-dom": ">=16"
+  },
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "react": ">=16",
+    "react-dom": ">=16"
+  },
+  "files": [
+    "dist"
+  ]
+}
