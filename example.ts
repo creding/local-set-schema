@@ -4,7 +4,7 @@
 // Demonstrates every generator function and React component in the toolkit.
 // Nothing here is imported by the app at runtime — it is documentation only.
 // =============================================================================
-
+/*
 import type {
   LocalBusinessConfig,
   OrganizationProfile,
@@ -152,7 +152,7 @@ export const demoProfile: OrganizationProfile = {
 // 3. REACT COMPONENT EXAMPLES
 // =============================================================================
 
-/*
+
 ──────────────────────────────────────────────────────────────────────────────
 3a. JsonLdOrganization — Root layout.tsx
     Builds: Brand Organization (#brand) + Local Business (#organization) + WebSite
