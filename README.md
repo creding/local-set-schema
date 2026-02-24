@@ -8,11 +8,11 @@ Most schema libraries (like `next-seo` or `react-schemaorg`) force you to write 
 
 It explicitly tells Google: _"This `FAQPage` is about this `Service`, which is provided by this `LocalBusiness`, which is a subsidiary of this parent `Organization` (Brand)."_
 
-### Features
+### How it works natively
 
-- **Zero Schema Bloat**: Spoke pages tightly focus on their specific content without repeating global brand schema.
-- **City Hub & Spoke Built-In**: Automatically handles the complex relationship between your canonical Brand and your individual City / Service Area pages.
-- **Site-Agnostic Setup**: Write your core `OrganizationProfile` config once, and pass it anywhere.
+1. You deploy the `<JsonLdOrganization>` component on every page. This establishes the foundation: the Brand, the LocalBusiness, and the WebSite.
+2. For specific pages (like a Service page or City Hub), you use one of our **Graph Builder Helpers** to generate the specific nodes for that page (e.g., `WebPage`, `Service`, `FAQPage`).
+3. You pass those generated nodes into the `<JsonLdOrganization>` component via the `graphItems` prop. The component stitches them all into one massive, interconnected `<script>` tag.
 
 ## Installation
 
@@ -26,7 +26,7 @@ pnpm add local-seo-schema
 
 ---
 
-## Quick Start
+## Quick Start (The Intended Pattern)
 
 ### 1. Define your Profile Details
 
@@ -62,9 +62,9 @@ export const myBrandProfile: OrganizationProfile = {
 };
 ```
 
-### 2. Add the Global Brand Schema (App Layout)
+### 2. The Global Setup (App Layout / Homepage)
 
-In your root layout or homepage component, use `<JsonLdOrganization>` to define the parent company and the broad services it offers.
+Use `<JsonLdOrganization>` to define the parent company and the broad services it offers. If this is the homepage, turn `includeGlobalSignals` on.
 
 ```tsx
 import { JsonLdOrganization } from "local-seo-schema";
@@ -96,38 +96,47 @@ export default function RootLayout({ children }) {
 }
 ```
 
-### 3. Build a Nested Service Graph (Targeted Spoke Pages)
+### 3. Spoke Pages (The Graph Injection Pattern)
 
-When building a specific service or location page, use our composite graph features to generate tightly focused schemas without bloating the `<head>`.
+When building a specific service or location page, use our `generate...Graph` helpers. They return a `graphItems` array that you inject straight back into the `<JsonLdOrganization>` component.
+
+Notice we set `includeGlobalSignals={false}` here to prevent the homepage bloat from copying over to the tight, specific service page.
 
 ```tsx
-import { JsonLdService } from "local-seo-schema";
+import { JsonLdOrganization, generateServicePageGraph } from "local-seo-schema";
+import { myBrandProfile } from "@/lib/schema";
 
 export default function DrainCleaningPage() {
+  // 1. Build the specific graph for this exact page
+  const { graphItems } = generateServicePageGraph({
+    pageUrl: "https://marioplumbing.com/drain-cleaning/",
+    title: "Drain Cleaning Services in Brooklyn",
+    description: "Professional hydro-jetting and root removal.",
+    serviceName: "Drain Cleaning",
+    serviceDescription: "Clear clogged drains fast.",
+    serviceType: "PlumbingService",
+    category: "Home Services",
+    organizationId: "https://marioplumbing.com/#organization", // Auto-links to the component below!
+    websiteId: "https://marioplumbing.com/#website",
+    breadcrumbItems: [
+      { name: "Home", item: "https://marioplumbing.com/" },
+      {
+        name: "Drain Cleaning",
+        item: "https://marioplumbing.com/drain-cleaning/",
+      },
+    ],
+    faqQuestions: [
+      { question: "How long does it take?", answer: "Usually under 1 hour." },
+    ],
+  });
+
   return (
     <>
-      <JsonLdService
-        pageUrl="https://marioplumbing.com/drain-cleaning/"
-        title="Drain Cleaning Services in Brooklyn"
-        description="Professional hydro-jetting and root removal."
-        serviceName="Drain Cleaning"
-        serviceType="PlumbingService"
-        category="Home Services"
-        organizationId="https://marioplumbing.com/#organization" // Auto-links to the layout schema!
-        websiteId="https://marioplumbing.com/#website"
-        breadcrumbItems={[
-          { name: "Home", item: "https://marioplumbing.com/" },
-          {
-            name: "Drain Cleaning",
-            item: "https://marioplumbing.com/drain-cleaning/",
-          },
-        ]}
-        faqQuestions={[
-          {
-            question: "How long does it take?",
-            answer: "Usually under 1 hour.",
-          },
-        ]}
+      {/* 2. Inject the graphItems into the main Organization component */}
+      <JsonLdOrganization
+        profile={myBrandProfile}
+        graphItems={graphItems}
+        includeGlobalSignals={false}
       />
       <main>...</main>
     </>
@@ -135,21 +144,20 @@ export default function DrainCleaningPage() {
 }
 ```
 
-_Behind the scenes, this will stitch together and inject a single `<script>` containing a `WebPage`, `BreadcrumbList`, `Service`, and `FAQPage` — properly referencing each other via `@id`._
-
 ---
 
 ## File Architecture
 
-| Export Area         | Purpose                                                                 |
-| ------------------- | ----------------------------------------------------------------------- |
-| **`JsonLd.tsx`**    | Easy-to-use React configuration components (injects the `<script>` tag) |
-| **`generators.ts`** | Low-level schema functions for building explicit sub-graphs.            |
-| **`types.ts`**      | All TypeScript interfaces (e.g. `OrganizationProfile`, `SiteInfo`)      |
+| Export Area             | Purpose                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| **`JsonLd.tsx`**        | Easy-to-use React configuration components (injects the `<script>` tag)       |
+| **`graph-builders.ts`** | High-level helpers that generate complete, interconnected `graphItems` arrays |
+| **`generators.ts`**     | Low-level schema functions for building explicit sub-graphs.                  |
+| **`types.ts`**          | All TypeScript interfaces (e.g. `OrganizationProfile`, `SiteInfo`)            |
 
 ## `@id` Graph Linking Conventions
 
-The secret to `local-seo-schema` is the strict anchor patterns. We use the following consistent IDs so Google can map entities across pages. If you supply `organizationId` strings to our composite generators, they will automatically stitch together.
+The secret to `local-seo-schema` is the strict anchor patterns. We use the following consistent IDs so Google can map entities across pages. When you supply `organizationId` or `websiteId` strings to our composite generators, they rely on these exact anchors to stitch together inside `<JsonLdOrganization>`.
 
 | Entity Type        | Default pattern (`@id`)        | Note                                   |
 | ------------------ | ------------------------------ | -------------------------------------- |
@@ -160,22 +168,6 @@ The secret to `local-seo-schema` is the strict anchor patterns. We use the follo
 ---
 
 ## Full API Reference
-
-### React Helper Components
-
-These components can be used anywhere in your React/Next.js tree.
-
-- `<JsonLdOrganization>` (Global Homepage layout)
-- `<JsonLdService>` (Service Hub pages)
-- `<JsonLdGallery>` (Portfolio / Image Galleries)
-- `<JsonLdFAQ>` (Standalone FAQ pages)
-- `<JsonLdArticle>` (For Blogs / News)
-- `<JsonLdProduct>` (For Ecommerce)
-- `<JsonLdHowTo>` (Step-by-step guides)
-- `<JsonLdEvent>` (Event pages)
-- `<JsonLdCourse>` (Courses/Educational)
-- `<JsonLdJobPosting>` (Careers / Hiring)
-- `<JsonLdCustom>` (Escape hatch for raw schema-dts data)
 
 ### Component Generator Props
 
@@ -237,43 +229,31 @@ interface OrganizationProfile {
 }
 ```
 
-#### `ServicePageGraphOptions`
+### Composite Page Graph Builders (The Core Tools)
 
-Extensively automates the `JsonLdService` component wiring.
+These are the functions you will use constantly. They return an object containing `.graphItems` (an array of schema elements) which you pass directly to `<JsonLdOrganization>`.
 
-```ts
-interface ServicePageGraphOptions {
-  pageUrl: string;
-  title: string;
-  description: string;
-  serviceName: string;
-  serviceDescription: string;
-  websiteId: string;
-  organizationId: string;
+- `generateStandardPageGraph(options)` — Emits WebPage, BreadcrumbList, and FAQPage.
+- `generateServicePageGraph(options)` — Standard + Service.
+- `generateCityHubGraph(options)` — Standard + LocalBusiness (city variant) + Service (catalogues).
+- `generateCityServicePageGraph(options)` — Standard + LocalBusiness (city variant) + Service.
+- `generateProjectPageGraph(options)` — Standard + CreativeWork + ImageObjects.
+- `generateCollectionPageGraph(options)` — Standard + ImageList.
+- `generateBlogHubGraph(options)` — Standard + Blog.
+- `generateArticlePageGraph(options)` — Standard + Article (BlogPosting).
+- `generateImageGalleryGraph(options)` — Standalone ImageGallery generator, no wrapper.
 
-  // Optional Enhancement Fields
-  serviceType?: string;
-  category?: string;
-  areaServed?: { name: string; region?: string; country?: string }[];
-  offerCatalogName?: string;
-  offerItems?: (string | { name: string; url?: string })[];
-  aggregateRating?: AggregateRating;
-  imageUrl?: string;
-  breadcrumbItems?: BreadcrumbItem[];
-  faqQuestions?: FAQItem[];
-}
-```
+### Smaller Standalone React Components
 
-### Composite Page Graph Generators (Advanced Users)
+If you don't need the massive interconnected graphs for a page, you can use these lightweight wrapper components.
 
-If you don't want to use the `<JsonLd...>` React components (e.g. you are composing logic outside of React or need extreme customizability), you can use the raw `generator` functions. They return an object containing the `.graphItems` array that you can inject safely into your own script tags or the `<JsonLdCustom>` component.
-
-- `generateStandardPageGraph(options)`
-- `generateServicePageGraph(options)`
-- `generateCityHubGraph(options)`
-- `generateCityServicePageGraph(options)`
-- `generateCollectionPageGraph(options)`
-- `generateProjectPageGraph(options)`
-- `generateBlogHubGraph(options)`
-- `generateArticlePageGraph(options)`
-- `generateImageGalleryGraph(options)`
+- `<JsonLdService>` (Wraps `generateServicePageGraph`)
+- `<JsonLdGallery>` (Wraps `generateImageGalleryGraph`)
+- `<JsonLdFAQ>` (Wrapper for standalone FAQ)
+- `<JsonLdArticle>` (For Blogs / News)
+- `<JsonLdProduct>` (For Ecommerce)
+- `<JsonLdHowTo>` (Step-by-step guides)
+- `<JsonLdEvent>` (Event pages)
+- `<JsonLdCourse>` (Courses/Educational)
+- `<JsonLdJobPosting>` (Careers / Hiring)
+- `<JsonLdCustom>` (Escape hatch for raw schema-dts data)
