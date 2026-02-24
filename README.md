@@ -5,11 +5,11 @@ A reusable, type-safe JSON-LD toolkit for Next.js/React projects. **Site-agnosti
 ## Installation
 
 ```sh
-npm install json-ld
+npm install local-seo-schema
 # or
-yarn add json-ld
+yarn add local-seo-schema
 # or
-pnpm add json-ld
+pnpm add local-seo-schema
 ```
 
 ## File Map

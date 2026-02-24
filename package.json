@@ -1,5 +1,5 @@
 {
-  "name": "json-ld",
+  "name": "local-seo-schema",
   "version": "1.0.0",
   "description": "A reusable, type-safe JSON-LD toolkit for Next.js/React projects. **Site-agnostic** — all site data is passed through typed option interfaces, making it portable across any project.",
   "main": "dist/index.js",
