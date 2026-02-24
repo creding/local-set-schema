@@ -10,9 +10,9 @@ It explicitly tells Google: _"This `FAQPage` is about this `Service`, which is p
 
 ### How it works natively
 
-1. You deploy the `<JsonLdOrganization>` component on every page. This establishes the foundation: the Brand, the LocalBusiness, and the WebSite.
-2. For specific pages (like a Service page or City Hub), you use one of our **Graph Builder Helpers** to generate the specific nodes for that page (e.g., `WebPage`, `Service`, `FAQPage`).
-3. You pass those generated nodes into the `<JsonLdOrganization>` component via the `graphItems` prop. The component stitches them all into one massive, interconnected `<script>` tag.
+1. You render the `<JsonLdOrganization>` component directly on your pages (e.g., inside `page.tsx` files). This establishes the foundation: the Brand, the LocalBusiness, and the WebSite.
+2. For specific spoke pages (like a Service page or City Hub), you use one of our **Graph Builder Helpers** to generate the specific nodes for that page (e.g., `WebPage`, `Service`, `FAQPage`).
+3. You pass those generated nodes into the `<JsonLdOrganization>` component for that page via the `graphItems` prop. The component stitches them all into one massive, interconnected `<script>` tag.
 
 ## Installation
 
@@ -62,43 +62,45 @@ export const myBrandProfile: OrganizationProfile = {
 };
 ```
 
-### 2. The Global Setup (App Layout / Homepage)
+### 2. The Homepage
 
-Use `<JsonLdOrganization>` to define the parent company and the broad services it offers. If this is the homepage, turn `includeGlobalSignals` on.
+Render `<JsonLdOrganization>` directly on your homepage. Turn `includeGlobalSignals` to `true` to embed your broad services, service areas, and company-wide information.
+
+_(Note: We recommend placing this component at the page level, not in the Next.js Root Layout, to prevent hydration and schema rendering issues)._
 
 ```tsx
 import { JsonLdOrganization } from "local-seo-schema";
 import { myBrandProfile } from "@/lib/schema";
 
-export default function RootLayout({ children }) {
+export default function HomePage() {
   return (
-    <html lang="en">
-      <body>
-        <JsonLdOrganization
-          profile={myBrandProfile}
-          knowsAbout={["Drain Cleaning", "Pipe Repair"]}
-          areaServed={[
-            { name: "Brooklyn", region: "NY" },
-            { name: "Queens", region: "NY" },
-          ]}
-          offers={[
-            {
-              name: "Drain Cleaning",
-              url: "https://marioplumbing.com/drain-cleaning/",
-            },
-          ]}
-          includeGlobalSignals={true}
-        />
-        {children}
-      </body>
-    </html>
+    <>
+      <JsonLdOrganization
+        profile={myBrandProfile}
+        knowsAbout={["Drain Cleaning", "Pipe Repair"]}
+        areaServed={[
+          { name: "Brooklyn", region: "NY" },
+          { name: "Queens", region: "NY" },
+        ]}
+        offers={[
+          {
+            name: "Drain Cleaning",
+            url: "https://marioplumbing.com/drain-cleaning/",
+          },
+        ]}
+        includeGlobalSignals={true}
+      />
+      <main>
+        <h1>Welcome to Mario's Pipes</h1>
+      </main>
+    </>
   );
 }
 ```
 
 ### 3. Spoke Pages (The Graph Injection Pattern)
 
-When building a specific service or location page, use our `generate...Graph` helpers. They return a `graphItems` array that you inject straight back into the `<JsonLdOrganization>` component.
+When building a specific service or location page, use our `generate...Graph` helpers. They return a `graphItems` array that you inject straight back into the `<JsonLdOrganization>` component for that specific page.
 
 Notice we set `includeGlobalSignals={false}` here to prevent the homepage bloat from copying over to the tight, specific service page.
 
@@ -132,7 +134,7 @@ export default function DrainCleaningPage() {
 
   return (
     <>
-      {/* 2. Inject the graphItems into the main Organization component */}
+      {/* 2. Inject the graphItems into the Organization component for this page */}
       <JsonLdOrganization
         profile={myBrandProfile}
         graphItems={graphItems}
@@ -175,7 +177,7 @@ When using the lower-level React Components OR the composite graph functions, yo
 
 #### `OrganizationProfile`
 
-Used heavily by the global `<JsonLdOrganization>` layout setup.
+Used heavily by the global `<JsonLdOrganization>` setup.
 
 ```ts
 interface OrganizationProfile {
@@ -231,7 +233,7 @@ interface OrganizationProfile {
 
 ### Composite Page Graph Builders (The Core Tools)
 
-These are the functions you will use constantly. They return an object containing `.graphItems` (an array of schema elements) which you pass directly to `<JsonLdOrganization>`.
+These are the functions you will use constantly. They return an object containing `.graphItems` (an array of schema elements) which you pass directly to `<JsonLdOrganization>` on your pages.
 
 - `generateStandardPageGraph(options)` — Emits WebPage, BreadcrumbList, and FAQPage.
 - `generateServicePageGraph(options)` — Standard + Service.
